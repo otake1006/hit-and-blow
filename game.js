@@ -15,6 +15,7 @@ const G = {
   myTurn: false,
   guessPending: false,
   won: false,
+  connectTimeout: null,
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -32,7 +33,12 @@ function calcHitBlow(secret, guess) {
 }
 
 function toPeerId(passphrase) {
-  return 'hitblow-' + encodeURIComponent(passphrase).replace(/%/g, '-');
+  // 各文字を4桁16進数に変換 → PeerJS が受け入れる英数字のみのIDになる
+  let hex = '';
+  for (const ch of passphrase) {
+    hex += ch.codePointAt(0).toString(16).padStart(4, '0');
+  }
+  return 'hb' + hex;
 }
 
 function send(msg) {
@@ -201,10 +207,21 @@ function joinRoom(passphrase) {
   setState('connecting');
   G.role = 'guest';
 
-  G.peer = new Peer(undefined, { debug: 0 });
+  // 15秒以内に接続できなければエラーで joining 画面に戻す
+  G.connectTimeout = setTimeout(() => {
+    if (G.state !== 'connecting') return;
+    const errEl = document.getElementById('join-error');
+    errEl.textContent = '接続がタイムアウトしました。合言葉を確認して再度お試しください。';
+    errEl.classList.remove('hidden');
+    if (G.peer) { try { G.peer.destroy(); } catch (_) {} G.peer = null; }
+    G.connectTimeout = null;
+    setState('joining');
+  }, 15000);
+
+  G.peer = new Peer({ debug: 0 });
 
   G.peer.on('open', () => {
-    G.conn = G.peer.connect(toPeerId(passphrase), { reliable: true });
+    G.conn = G.peer.connect(toPeerId(passphrase), { serialization: 'json' });
     setupConnectionHandlers();
   });
 
@@ -214,6 +231,7 @@ function joinRoom(passphrase) {
 // ─── Connection handlers ──────────────────────────────────────────────────────
 function setupConnectionHandlers() {
   G.conn.on('open', () => {
+    if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
     if (G.role === 'guest') setState('setup');
   });
 
@@ -307,6 +325,7 @@ function handlePeerError(err) {
   }
 
   if (G.role === 'guest') {
+    if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
     let msg = '接続に失敗しました。再度お試しください。';
     if (err.type === 'peer-unavailable') msg = 'その合言葉のルームが見つかりません。';
     if (err.type === 'network')          msg = 'ネットワークエラーが発生しました。';
@@ -326,11 +345,13 @@ function resetGame() {
   if (G.conn) { try { G.conn.close();   } catch (_) {} }
   if (G.peer) { try { G.peer.destroy(); } catch (_) {} }
 
+  if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
   Object.assign(G, {
     state: 'landing', peer: null, conn: null, role: null,
     passphrase: null, mySecret: null,
     myReadySent: false, opponentReady: false,
     myGuesses: [], opponentGuesses: [], myTurn: false, guessPending: false, won: false,
+    connectTimeout: null,
   });
 
   setupNumpad.reset();

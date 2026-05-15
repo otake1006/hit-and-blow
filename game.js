@@ -195,7 +195,7 @@ function createRoom(passphrase) {
   G.peer.on('connection', conn => {
     G.conn = conn;
     setupConnectionHandlers();
-    setState('setup');
+    // conn.on('open') 発火後に setState('setup') するので、ここでは遷移しない
   });
 
   G.peer.on('error', handlePeerError);
@@ -218,10 +218,10 @@ function joinRoom(passphrase) {
     setState('joining');
   }, 15000);
 
-  G.peer = new Peer({ debug: 0 });
+  G.peer = new Peer(undefined, { debug: 0 });
 
   G.peer.on('open', () => {
-    G.conn = G.peer.connect(toPeerId(passphrase), { serialization: 'json' });
+    G.conn = G.peer.connect(toPeerId(passphrase));
     setupConnectionHandlers();
   });
 
@@ -232,7 +232,7 @@ function joinRoom(passphrase) {
 function setupConnectionHandlers() {
   G.conn.on('open', () => {
     if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
-    if (G.role === 'guest') setState('setup');
+    setState('setup'); // ホスト・ゲスト両方、データチャンネルが開いたら setup へ
   });
 
   G.conn.on('data', msg => {

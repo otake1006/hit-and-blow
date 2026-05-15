@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ヒット&ブロー</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Landing -->
+  <section id="screen-landing" class="screen">
+    <div class="card center-card">
+      <h1 class="title">🎯 ヒット&ブロー</h1>
+      <p class="subtitle">4桁の数字を当てるP2P対戦ゲーム</p>
+      <div class="rules">
+        <p><span class="hit-badge">Hit</span> 数字も位置も正解</p>
+        <p><span class="blow-badge">Blow</span> 数字は正解、位置が違う</p>
+      </div>
+      <div class="btn-group">
+        <button id="btn-create" class="btn btn-primary">ゲームを作る</button>
+        <button id="btn-join" class="btn btn-secondary">ゲームに参加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Creating (PeerJS initializing) -->
+  <section id="screen-creating" class="screen hidden">
+    <div class="card center-card">
+      <div class="spinner"></div>
+      <p class="status-text">ルームを作成中...</p>
+    </div>
+  </section>
+
+  <!-- Waiting (host shows room ID) -->
+  <section id="screen-waiting" class="screen hidden">
+    <div class="card center-card">
+      <h2>ルームを作成しました</h2>
+      <p class="hint">このIDを相手に伝えてください</p>
+      <div class="room-id-box">
+        <span id="room-id-display"></span>
+        <button id="btn-copy" class="btn btn-ghost" title="コピー">コピー</button>
+      </div>
+      <p id="copy-feedback" class="copy-feedback hidden">コピーしました！</p>
+      <div class="spinner"></div>
+      <p class="status-text">相手の接続を待っています...</p>
+    </div>
+  </section>
+
+  <!-- Joining (guest enters room ID) -->
+  <section id="screen-joining" class="screen hidden">
+    <div class="card center-card">
+      <h2>ゲームに参加</h2>
+      <p class="hint">相手から教えてもらったルームIDを入力してください</p>
+      <div class="input-group">
+        <input id="input-room-id" type="text" class="text-input" placeholder="ルームIDを入力" autocomplete="off" spellcheck="false">
+        <p id="join-error" class="error-text hidden">ルームIDを入力してください</p>
+      </div>
+      <div class="btn-group">
+        <button id="btn-connect" class="btn btn-primary">参加する</button>
+        <button id="btn-back-from-join" class="btn btn-ghost">戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Connecting -->
+  <section id="screen-connecting" class="screen hidden">
+    <div class="card center-card">
+      <div class="spinner"></div>
+      <p class="status-text">接続中...</p>
+    </div>
+  </section>
+
+  <!-- Setup (choose secret number) -->
+  <section id="screen-setup" class="screen hidden">
+    <div class="card center-card">
+      <h2>秘密の数字を決めてください</h2>
+      <p class="hint">0〜9の重複なし4桁の数字を入力してください</p>
+      <div class="input-group">
+        <input id="input-secret" type="text" class="text-input digit-input" maxlength="4" placeholder="例: 1234" autocomplete="off" inputmode="numeric">
+        <p id="setup-error" class="error-text hidden">4桁で重複なしの数字を入力してください</p>
+      </div>
+      <button id="btn-set-secret" class="btn btn-primary">決定</button>
+      <div id="setup-waiting" class="waiting-overlay hidden">
+        <div class="spinner"></div>
+        <p>相手の準備を待っています...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Game screen -->
+  <section id="screen-game" class="screen hidden">
+    <div class="game-header">
+      <h1 class="game-title">ヒット&ブロー</h1>
+      <div id="turn-badge" class="turn-badge">...</div>
+    </div>
+
+    <div class="game-body">
+      <!-- My guesses panel -->
+      <div class="game-panel">
+        <h3>自分の推測</h3>
+        <div class="guess-input-row">
+          <input id="input-guess" type="text" class="text-input digit-input" maxlength="4" placeholder="推測を入力" autocomplete="off" inputmode="numeric">
+          <button id="btn-guess" class="btn btn-primary" disabled>推測する</button>
+        </div>
+        <p id="guess-error" class="error-text hidden">4桁で重複なしの数字を入力してください</p>
+        <div class="table-wrapper">
+          <table id="my-guess-table" class="guess-table">
+            <thead>
+              <tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr>
+            </thead>
+            <tbody id="my-guess-body"></tbody>
+          </table>
+          <p id="my-guess-empty" class="empty-hint">まだ推測がありません</p>
+        </div>
+      </div>
+
+      <!-- Opponent guesses panel -->
+      <div class="game-panel">
+        <h3>相手の推測</h3>
+        <div class="table-wrapper">
+          <table id="opp-guess-table" class="guess-table">
+            <thead>
+              <tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr>
+            </thead>
+            <tbody id="opp-guess-body"></tbody>
+          </table>
+          <p id="opp-guess-empty" class="empty-hint">まだ推測がありません</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section id="screen-result" class="screen hidden">
+    <div class="card center-card">
+      <div id="result-icon" class="result-icon"></div>
+      <h2 id="result-title"></h2>
+      <p id="result-msg" class="hint"></p>
+      <button id="btn-replay" class="btn btn-primary">もう一度遊ぶ</button>
+    </div>
+  </section>
+
+  <!-- Disconnected -->
+  <section id="screen-disconnected" class="screen hidden">
+    <div class="card center-card">
+      <div class="result-icon">⚠️</div>
+      <h2>接続が切れました</h2>
+      <p class="hint">相手との接続が切断されました</p>
+      <button id="btn-back-from-disconnect" class="btn btn-primary">最初に戻る</button>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

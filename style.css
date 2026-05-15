@@ -1,0 +1,390 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --surface-alt: #0f3460;
+  --accent: #e94560;
+  --hit: #e8b86d;
+  --blow: #7ec8e3;
+  --text: #eaeaea;
+  --text-muted: #888;
+  --border: #2a2a4a;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* ─── Screen visibility ─── */
+.screen { width: 100%; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.hidden { display: none !important; }
+
+/* ─── Card ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  width: 100%;
+}
+
+.center-card {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+/* ─── Typography ─── */
+.title {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.status-text {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* ─── Rules block ─── */
+.rules {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.rules p { display: flex; align-items: center; gap: 10px; }
+
+/* ─── Badges ─── */
+.hit-badge, .blow-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.hit-badge  { background: var(--hit);  color: #1a1a2e; }
+.blow-badge { background: var(--blow); color: #1a1a2e; }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) { opacity: 0.88; }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; font-size: 0.9rem; }
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ─── Inputs ─── */
+.text-input {
+  background: var(--surface-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.1rem;
+  padding: 12px 16px;
+  width: 100%;
+  min-height: 48px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.text-input:focus { border-color: var(--accent); }
+.text-input::placeholder { color: var(--text-muted); }
+
+.digit-input {
+  font-family: "Courier New", monospace;
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.input-group { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+
+/* ─── Error text ─── */
+.error-text {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+/* ─── Room ID box ─── */
+.room-id-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  width: 100%;
+}
+
+#room-id-display {
+  font-family: "Courier New", monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+  flex: 1;
+  word-break: break-all;
+}
+
+.copy-feedback {
+  color: var(--blow);
+  font-size: 0.85rem;
+}
+
+/* ─── Spinner ─── */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Setup waiting overlay ─── */
+#setup-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ─── Game layout ─── */
+#screen-game {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  min-height: 100vh;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.game-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.turn-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  transition: background 0.3s, color 0.3s;
+}
+
+.turn-badge.my-turn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.game-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.game-panel {
+  padding: 20px 20px 80px;
+  border-right: 1px solid var(--border);
+}
+
+.game-panel:last-child { border-right: none; }
+
+.guess-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.guess-input-row .text-input {
+  flex: 1;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+}
+
+.guess-input-row .btn {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ─── Guess table ─── */
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.guess-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.guess-table th {
+  text-align: center;
+  padding: 8px 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.05em;
+}
+
+.guess-table td {
+  text-align: center;
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.guess-table tbody tr:last-child td { border-bottom: none; }
+
+.guess-table td:nth-child(2) {
+  font-family: "Courier New", monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.15em;
+}
+
+.hit-col  { color: var(--hit); }
+.blow-col { color: var(--blow); }
+
+.hit-val  { color: var(--hit);  font-weight: 700; }
+.blow-val { color: var(--blow); font-weight: 700; }
+.zero-val { color: var(--text-muted); }
+
+.empty-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ─── Result screen ─── */
+.result-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 600px) {
+  body { padding: 8px; align-items: flex-start; }
+
+  .card { padding: 28px 20px; }
+
+  .title { font-size: 1.8rem; }
+
+  .game-header { padding: 12px 16px; }
+
+  .game-body {
+    grid-template-columns: 1fr;
+  }
+
+  .game-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 16px 32px;
+  }
+
+  .game-panel:last-child { border-bottom: none; }
+
+  #room-id-display { font-size: 1.1rem; }
+
+  .digit-input { font-size: 1.2rem; }
+}

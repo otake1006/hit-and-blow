@@ -211,7 +211,7 @@ h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transfo
 }
 
 /* game panel numpad: no max-width constraint */
-.numpad-game { max-width: none; margin-bottom: 16px; }
+.numpad-game { max-width: none; }
 
 /* ─── Digit display ─── */
 .numpad-display {
@@ -344,14 +344,23 @@ h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transfo
 .game-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "left  right"
+    "input right";
   flex: 1;
 }
 
-.game-panel {
-  padding: 16px 20px 60px;
+.game-panel { padding: 16px 20px; }
+.game-panel-left  { grid-area: left;  border-right: 1px solid var(--border); }
+.game-panel-right { grid-area: right; }
+
+.game-input-area {
+  grid-area: input;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
   border-right: 1px solid var(--border);
 }
-.game-panel:last-child { border-right: none; }
 
 /* ─── Guess table ─── */
 .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 4px; }
@@ -440,16 +449,25 @@ h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transfo
   .game-title { font-size: 1rem; }
   .turn-badge { font-size: 0.76rem; padding: 5px 10px; }
 
-  /* ゲームボディ: 縦積み */
-  .game-body { grid-template-columns: 1fr; }
-  .game-panel {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: 14px 14px 28px;
+  /* ゲームボディ: 上部に2列テーブル、下部にテンキー */
+  .game-body {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "left  right"
+      "input input";
   }
-  .game-panel:last-child {
-    border-bottom: none;
-    padding-bottom: max(28px, var(--safe-bottom));
+  .game-panel {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .game-panel-left  { border-right: 1px solid var(--border); }
+  .game-panel-right { border-right: none; }
+  .game-input-area {
+    border-right: none;
+    border-top: none;
+    padding: 14px 14px;
+    padding-bottom: max(16px, var(--safe-bottom));
   }
 
   /* テンキーボタンを大きめに */

@@ -133,8 +133,31 @@
 
     <div class="game-body">
       <!-- My guesses panel -->
-      <div class="game-panel">
+      <div class="game-panel game-panel-left">
         <h3>自分の推測</h3>
+        <div class="table-wrapper">
+          <table class="guess-table">
+            <thead><tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr></thead>
+            <tbody id="my-guess-body"></tbody>
+          </table>
+          <p id="my-guess-empty" class="empty-hint">まだ推測がありません</p>
+        </div>
+      </div>
+
+      <!-- Opponent guesses panel -->
+      <div class="game-panel game-panel-right">
+        <h3>相手の推測</h3>
+        <div class="table-wrapper">
+          <table class="guess-table">
+            <thead><tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr></thead>
+            <tbody id="opp-guess-body"></tbody>
+          </table>
+          <p id="opp-guess-empty" class="empty-hint">まだ推測がありません</p>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="game-input-area">
         <div class="numpad numpad-game" id="numpad-game">
           <div class="numpad-display">
             <span class="digit-slot" id="game-slot-0">—</span>
@@ -156,25 +179,6 @@
             <button class="numpad-btn" data-digit="0">0</button>
             <button class="numpad-btn numpad-ok" data-action="ok" disabled>推測</button>
           </div>
-        </div>
-        <div class="table-wrapper">
-          <table class="guess-table">
-            <thead><tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr></thead>
-            <tbody id="my-guess-body"></tbody>
-          </table>
-          <p id="my-guess-empty" class="empty-hint">まだ推測がありません</p>
-        </div>
-      </div>
-
-      <!-- Opponent guesses panel -->
-      <div class="game-panel">
-        <h3>相手の推測</h3>
-        <div class="table-wrapper">
-          <table class="guess-table">
-            <thead><tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr></thead>
-            <tbody id="opp-guess-body"></tbody>
-          </table>
-          <p id="opp-guess-empty" class="empty-hint">まだ推測がありません</p>
         </div>
       </div>
     </div>

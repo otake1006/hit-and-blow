@@ -24,6 +24,22 @@
     </div>
   </section>
 
+  <!-- Create form (host enters passphrase) -->
+  <section id="screen-create-form" class="screen hidden">
+    <div class="card center-card">
+      <h2>ルームを作る</h2>
+      <p class="hint">合言葉を決めてください（英数字・ひらがな等、1〜20文字）</p>
+      <div class="input-group">
+        <input id="input-passphrase-create" type="text" class="text-input" maxlength="20" placeholder="例: さくら123" autocomplete="off" spellcheck="false">
+        <p id="create-error" class="error-text hidden">合言葉を入力してください</p>
+      </div>
+      <div class="btn-group">
+        <button id="btn-start-create" class="btn btn-primary">ルームを作成</button>
+        <button id="btn-back-from-create" class="btn btn-ghost">戻る</button>
+      </div>
+    </div>
+  </section>
+
   <!-- Creating (PeerJS initializing) -->
   <section id="screen-creating" class="screen hidden">
     <div class="card center-card">
@@ -32,13 +48,13 @@
     </div>
   </section>
 
-  <!-- Waiting (host shows room ID) -->
+  <!-- Waiting (host shows passphrase) -->
   <section id="screen-waiting" class="screen hidden">
     <div class="card center-card">
       <h2>ルームを作成しました</h2>
-      <p class="hint">このIDを相手に伝えてください</p>
+      <p class="hint">この合言葉を相手に伝えてください</p>
       <div class="room-id-box">
-        <span id="room-id-display"></span>
+        <span id="passphrase-display"></span>
         <button id="btn-copy" class="btn btn-ghost" title="コピー">コピー</button>
       </div>
       <p id="copy-feedback" class="copy-feedback hidden">コピーしました！</p>
@@ -47,14 +63,14 @@
     </div>
   </section>
 
-  <!-- Joining (guest enters room ID) -->
+  <!-- Joining (guest enters passphrase) -->
   <section id="screen-joining" class="screen hidden">
     <div class="card center-card">
       <h2>ゲームに参加</h2>
-      <p class="hint">相手から教えてもらったルームIDを入力してください</p>
+      <p class="hint">相手から教えてもらった合言葉を入力してください</p>
       <div class="input-group">
-        <input id="input-room-id" type="text" class="text-input" placeholder="ルームIDを入力" autocomplete="off" spellcheck="false">
-        <p id="join-error" class="error-text hidden">ルームIDを入力してください</p>
+        <input id="input-room-id" type="text" class="text-input" placeholder="合言葉を入力" autocomplete="off" spellcheck="false">
+        <p id="join-error" class="error-text hidden">合言葉を入力してください</p>
       </div>
       <div class="btn-group">
         <button id="btn-connect" class="btn btn-primary">参加する</button>

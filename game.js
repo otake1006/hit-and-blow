@@ -5,13 +5,13 @@ const G = {
   state: 'landing',
   peer: null,
   conn: null,
-  role: null,           // 'host' | 'guest'
-  passphrase: null,
+  role: null,
+  roomCode: null,
   mySecret: null,
   myReadySent: false,
   opponentReady: false,
-  myGuesses: [],        // [{guess, hits, blows}]
-  opponentGuesses: [],  // [{guess, hits, blows}]
+  myGuesses: [],
+  opponentGuesses: [],
   myTurn: false,
   guessPending: false,
   won: false,
@@ -32,12 +32,16 @@ function calcHitBlow(secret, guess) {
   return { hits, blows };
 }
 
-function toPeerId(passphrase) {
-  // 各文字を4桁16進数に変換 → PeerJS が受け入れる英数字のみのIDになる
+// ルームコード(6文字)を自動生成 — 紛らわしい文字(0/O, 1/I/L)を除外
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+// ルームコード → PeerJS ID (英数字のみの安全な形式)
+function toPeerId(code) {
   let hex = '';
-  for (const ch of passphrase) {
-    hex += ch.codePointAt(0).toString(16).padStart(4, '0');
-  }
+  for (const ch of code) hex += ch.codePointAt(0).toString(16).padStart(4, '0');
   return 'hb' + hex;
 }
 
@@ -50,10 +54,10 @@ function createNumpad(prefix, onSubmit) {
   let value = '';
   let enabled = true;
 
-  const slots    = [0, 1, 2, 3].map(i => document.getElementById(`${prefix}-slot-${i}`));
+  const slots     = [0, 1, 2, 3].map(i => document.getElementById(`${prefix}-slot-${i}`));
   const digitBtns = document.querySelectorAll(`#numpad-${prefix} [data-digit]`);
-  const delBtn   = document.querySelector(`#numpad-${prefix} [data-action="del"]`);
-  const okBtn    = document.querySelector(`#numpad-${prefix} [data-action="ok"]`);
+  const delBtn    = document.querySelector(`#numpad-${prefix} [data-action="del"]`);
+  const okBtn     = document.querySelector(`#numpad-${prefix} [data-action="ok"]`);
 
   function refresh() {
     slots.forEach((slot, i) => {
@@ -70,11 +74,9 @@ function createNumpad(prefix, onSubmit) {
         slot.classList.remove('filled', 'active');
       }
     });
-
     digitBtns.forEach(btn => {
       btn.disabled = !enabled || value.includes(btn.dataset.digit) || value.length >= 4;
     });
-
     if (delBtn) delBtn.disabled = !enabled || value.length === 0;
     if (okBtn)  okBtn.disabled  = !enabled || value.length !== 4;
   }
@@ -86,24 +88,21 @@ function createNumpad(prefix, onSubmit) {
       refresh();
     });
   });
-
   if (delBtn) delBtn.addEventListener('click', () => {
     if (!enabled || value.length === 0) return;
     value = value.slice(0, -1);
     refresh();
   });
-
   if (okBtn) okBtn.addEventListener('click', () => {
     if (!enabled || value.length !== 4) return;
     onSubmit(value);
   });
 
   refresh();
-
   return {
-    reset()           { value = ''; refresh(); },
-    getValue()        { return value; },
-    setEnabled(v)     { enabled = v; refresh(); },
+    reset()       { value = ''; refresh(); },
+    getValue()    { return value; },
+    setEnabled(v) { enabled = v; refresh(); },
   };
 }
 
@@ -115,7 +114,7 @@ function setState(newState) {
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 const screens = [
-  'landing', 'create-form', 'creating', 'waiting', 'joining',
+  'landing', 'creating', 'waiting', 'joining',
   'connecting', 'setup', 'game', 'result', 'disconnected',
 ];
 
@@ -136,9 +135,7 @@ function renderGame() {
     badge.textContent = '相手のターン';
     badge.classList.remove('my-turn');
   }
-
   guessNumpad.setEnabled(G.myTurn && !G.guessPending);
-
   renderGuessTable('my-guess-body',  'my-guess-empty',  G.myGuesses);
   renderGuessTable('opp-guess-body', 'opp-guess-empty', G.opponentGuesses);
 }
@@ -147,13 +144,8 @@ function renderGuessTable(bodyId, emptyId, list) {
   const tbody = document.getElementById(bodyId);
   const empty = document.getElementById(emptyId);
   tbody.innerHTML = '';
-
-  if (list.length === 0) {
-    empty.classList.remove('hidden');
-    return;
-  }
+  if (list.length === 0) { empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
-
   list.forEach((entry, i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -180,38 +172,49 @@ function revealOpponentSecret(secret) {
 }
 
 // ─── PeerJS Host ──────────────────────────────────────────────────────────────
-function createRoom(passphrase) {
-  G.passphrase = passphrase;
-  setState('creating');
-  G.role = 'host';
+// ランダムコードを自動生成してルームを作る。IDが衝突した場合は自動リトライ。
+function createRoom(attempt = 0) {
+  if (attempt >= 5) { setState('disconnected'); return; }
 
-  G.peer = new Peer(toPeerId(passphrase), { debug: 0 });
+  const code = generateRoomCode();
+  G.roomCode = code;
+  G.role = 'host';
+  setState('creating');
+
+  if (G.peer) { try { G.peer.destroy(); } catch (_) {} G.peer = null; }
+  G.peer = new Peer(toPeerId(code), { debug: 0 });
 
   G.peer.on('open', () => {
-    document.getElementById('passphrase-display').textContent = passphrase;
+    document.getElementById('room-code-display').textContent = code;
     setState('waiting');
   });
 
   G.peer.on('connection', conn => {
     G.conn = conn;
     setupConnectionHandlers();
-    // conn.on('open') 発火後に setState('setup') するので、ここでは遷移しない
+    // データチャンネルが開いたら conn.on('open') 内で setup へ遷移
   });
 
-  G.peer.on('error', handlePeerError);
+  G.peer.on('error', err => {
+    if (err.type === 'unavailable-id') {
+      // 同じコードが既に使用中 → 別コードで自動リトライ
+      createRoom(attempt + 1);
+    } else {
+      handlePeerError(err);
+    }
+  });
 }
 
 // ─── PeerJS Guest ─────────────────────────────────────────────────────────────
-function joinRoom(passphrase) {
-  G.passphrase = passphrase;
+function joinRoom(code) {
+  G.roomCode = code;
   setState('connecting');
   G.role = 'guest';
 
-  // 15秒以内に接続できなければエラーで joining 画面に戻す
   G.connectTimeout = setTimeout(() => {
     if (G.state !== 'connecting') return;
     const errEl = document.getElementById('join-error');
-    errEl.textContent = '接続がタイムアウトしました。合言葉を確認して再度お試しください。';
+    errEl.textContent = '接続がタイムアウトしました。ルームコードを確認して再度お試しください。';
     errEl.classList.remove('hidden');
     if (G.peer) { try { G.peer.destroy(); } catch (_) {} G.peer = null; }
     G.connectTimeout = null;
@@ -221,7 +224,7 @@ function joinRoom(passphrase) {
   G.peer = new Peer(undefined, { debug: 0 });
 
   G.peer.on('open', () => {
-    G.conn = G.peer.connect(toPeerId(passphrase));
+    G.conn = G.peer.connect(toPeerId(code));
     setupConnectionHandlers();
   });
 
@@ -230,16 +233,17 @@ function joinRoom(passphrase) {
 
 // ─── Connection handlers ──────────────────────────────────────────────────────
 function setupConnectionHandlers() {
+  // ホスト・ゲスト両方、データチャンネルが開いてから setup へ
   G.conn.on('open', () => {
     if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
-    setState('setup'); // ホスト・ゲスト両方、データチャンネルが開いたら setup へ
+    setState('setup');
   });
 
   G.conn.on('data', msg => {
     switch (msg.type) {
-      case 'READY':  handleOpponentReady();          break;
-      case 'GUESS':  handleOpponentGuess(msg.guess); break;
-      case 'RESULT': handleResult(msg);              break;
+      case 'READY':  handleOpponentReady();           break;
+      case 'GUESS':  handleOpponentGuess(msg.guess);  break;
+      case 'RESULT': handleResult(msg);               break;
       case 'REVEAL': revealOpponentSecret(msg.secret); break;
     }
   });
@@ -252,10 +256,8 @@ function setupConnectionHandlers() {
 function submitSecret(val) {
   G.mySecret = val;
   G.myReadySent = true;
-
   setupNumpad.setEnabled(false);
   document.getElementById('setup-waiting').classList.remove('hidden');
-
   send({ type: 'READY' });
   tryStartGame();
 }
@@ -275,12 +277,10 @@ function tryStartGame() {
 // ─── Game phase ───────────────────────────────────────────────────────────────
 function submitGuess(val) {
   if (!G.myTurn || G.guessPending) return;
-
   G.guessPending = true;
   G.myTurn = false;
   guessNumpad.setEnabled(false);
   guessNumpad.reset();
-
   send({ type: 'GUESS', guess: val });
   renderGame();
 }
@@ -289,9 +289,7 @@ function handleOpponentGuess(guess) {
   const { hits, blows } = calcHitBlow(G.mySecret, guess);
   G.opponentGuesses.push({ guess, hits, blows });
   send({ type: 'RESULT', guess, hits, blows });
-
   if (hits === 4) {
-    // 相手が当てた → 自分の負け。勝者(相手)に自分の秘密を開示
     showResult(false, null);
   } else {
     G.myTurn = true;
@@ -302,11 +300,9 @@ function handleOpponentGuess(guess) {
 function handleResult(msg) {
   G.myGuesses.push({ guess: msg.guess, hits: msg.hits, blows: msg.blows });
   G.guessPending = false;
-
   if (msg.hits === 4) {
-    // 自分が当てた → 勝ち。相手に自分の秘密を開示
     send({ type: 'REVEAL', secret: G.mySecret });
-    showResult(true, msg.guess); // msg.guess が相手の秘密数字
+    showResult(true, msg.guess);
   } else {
     G.myTurn = false;
     setState('game');
@@ -315,19 +311,10 @@ function handleResult(msg) {
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 function handlePeerError(err) {
-  if (G.role === 'host' && (err.type === 'unavailable-id' || err.type === 'peer-unavailable')) {
-    const errEl = document.getElementById('create-error');
-    errEl.textContent = 'この合言葉は既に使われています。別の合言葉をお試しください。';
-    errEl.classList.remove('hidden');
-    if (G.peer) { try { G.peer.destroy(); } catch (_) {} G.peer = null; }
-    setState('create-form');
-    return;
-  }
-
   if (G.role === 'guest') {
     if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
     let msg = '接続に失敗しました。再度お試しください。';
-    if (err.type === 'peer-unavailable') msg = 'その合言葉のルームが見つかりません。';
+    if (err.type === 'peer-unavailable') msg = 'そのルームコードのルームが見つかりません。';
     if (err.type === 'network')          msg = 'ネットワークエラーが発生しました。';
     const errEl = document.getElementById('join-error');
     errEl.textContent = msg;
@@ -336,22 +323,21 @@ function handlePeerError(err) {
     setState('joining');
     return;
   }
-
   setState('disconnected');
 }
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
 function resetGame() {
+  if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
   if (G.conn) { try { G.conn.close();   } catch (_) {} }
   if (G.peer) { try { G.peer.destroy(); } catch (_) {} }
 
-  if (G.connectTimeout) { clearTimeout(G.connectTimeout); G.connectTimeout = null; }
   Object.assign(G, {
     state: 'landing', peer: null, conn: null, role: null,
-    passphrase: null, mySecret: null,
+    roomCode: null, mySecret: null,
     myReadySent: false, opponentReady: false,
-    myGuesses: [], opponentGuesses: [], myTurn: false, guessPending: false, won: false,
-    connectTimeout: null,
+    myGuesses: [], opponentGuesses: [],
+    myTurn: false, guessPending: false, won: false, connectTimeout: null,
   });
 
   setupNumpad.reset();
@@ -360,8 +346,6 @@ function resetGame() {
   guessNumpad.setEnabled(false);
 
   document.getElementById('setup-waiting').classList.add('hidden');
-  document.getElementById('input-passphrase-create').value = '';
-  document.getElementById('create-error').classList.add('hidden');
   document.getElementById('input-room-id').value = '';
   document.getElementById('join-error').classList.add('hidden');
 
@@ -377,35 +361,17 @@ window.addEventListener('load', () => {
     return;
   }
 
-  // Numpad初期化
   setupNumpad = createNumpad('setup', submitSecret);
   guessNumpad = createNumpad('game',  submitGuess);
-  guessNumpad.setEnabled(false); // ゲーム開始まで無効
+  guessNumpad.setEnabled(false);
 
   // Landing
-  document.getElementById('btn-create').addEventListener('click', () => setState('create-form'));
+  document.getElementById('btn-create').addEventListener('click', () => createRoom());
   document.getElementById('btn-join').addEventListener('click',   () => setState('joining'));
 
-  // Create form
-  document.getElementById('btn-start-create').addEventListener('click', () => {
-    const val   = document.getElementById('input-passphrase-create').value.trim();
-    const errEl = document.getElementById('create-error');
-    if (!val) {
-      errEl.textContent = '合言葉を入力してください';
-      errEl.classList.remove('hidden');
-      return;
-    }
-    errEl.classList.add('hidden');
-    createRoom(val);
-  });
-  document.getElementById('input-passphrase-create').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('btn-start-create').click();
-  });
-  document.getElementById('btn-back-from-create').addEventListener('click', () => setState('landing'));
-
-  // Waiting — copy passphrase
+  // Waiting — copy room code
   document.getElementById('btn-copy').addEventListener('click', () => {
-    const text     = document.getElementById('passphrase-display').textContent;
+    const text     = document.getElementById('room-code-display').textContent;
     const feedback = document.getElementById('copy-feedback');
     const show = () => {
       feedback.classList.remove('hidden');
@@ -424,10 +390,10 @@ window.addEventListener('load', () => {
 
   // Joining
   document.getElementById('btn-connect').addEventListener('click', () => {
-    const val   = document.getElementById('input-room-id').value.trim();
+    const val   = document.getElementById('input-room-id').value.trim().toUpperCase();
     const errEl = document.getElementById('join-error');
     if (!val) {
-      errEl.textContent = '合言葉を入力してください';
+      errEl.textContent = 'ルームコードを入力してください';
       errEl.classList.remove('hidden');
       return;
     }

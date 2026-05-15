@@ -16,6 +16,8 @@ const G = {
   guessPending: false,
   won: false,
   connectTimeout: null,
+  hostWinPending: false,  // ホストが勝利確定、ゲストの最後の1手を待機中
+  lastChanceTurn: false,  // ゲスト側: 今が最後の1手
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -137,7 +139,13 @@ function renderUI() {
 
 function renderGame() {
   const badge = document.getElementById('turn-badge');
-  if (G.myTurn) {
+  if (G.hostWinPending) {
+    badge.textContent = '相手の最後のチャンス';
+    badge.classList.remove('my-turn');
+  } else if (G.lastChanceTurn) {
+    badge.textContent = '最後のチャンス！';
+    badge.classList.add('my-turn');
+  } else if (G.myTurn) {
     badge.textContent = 'あなたのターン';
     badge.classList.add('my-turn');
   } else {
@@ -167,10 +175,13 @@ function renderGuessTable(bodyId, emptyId, list) {
   });
 }
 
-function showResult(won, opponentSecret) {
-  G.won = won;
-  document.getElementById('result-icon').textContent  = won ? '🏆' : '😢';
-  document.getElementById('result-title').textContent = won ? 'あなたの勝ち！' : 'あなたの負け...';
+function showResult(outcome, opponentSecret) {
+  // outcome: true=勝ち, false=負け, 'draw'=引き分け
+  G.won = outcome === true;
+  const isDraw = outcome === 'draw';
+  const isWin  = outcome === true;
+  document.getElementById('result-icon').textContent  = isDraw ? '🤝' : (isWin ? '🏆' : '😢');
+  document.getElementById('result-title').textContent = isDraw ? '引き分け！' : (isWin ? 'あなたの勝ち！' : 'あなたの負け...');
   document.getElementById('result-my-secret').textContent  = G.mySecret || '—';
   document.getElementById('result-opp-secret').textContent = opponentSecret || '...';
   setState('result');
@@ -295,10 +306,25 @@ function submitGuess(val) {
 function handleOpponentGuess(guess) {
   const { hits, blows } = calcHitBlow(G.mySecret, guess);
   G.opponentGuesses.push({ guess, hits, blows });
-  send({ type: 'RESULT', guess, hits, blows });
-  if (hits === 4) {
+
+  if (G.hostWinPending) {
+    // ゲストの最後の1手を評価（ホスト側で実行）
+    G.hostWinPending = false;
+    send({ type: 'RESULT', guess, hits, blows });
+    send({ type: 'REVEAL', secret: G.mySecret });
+    showResult(hits === 4 ? 'draw' : true, guess);
+  } else if (hits === 4 && G.role === 'guest') {
+    // ホストが正解 → ゲストに最後の1手を与える
+    send({ type: 'RESULT', guess, hits, blows, lastChance: true });
+    G.myTurn = true;
+    G.lastChanceTurn = true;
+    setState('game');
+  } else if (hits === 4) {
+    // ゲストが正解（通常の勝利）
+    send({ type: 'RESULT', guess, hits, blows });
     showResult(false, null);
   } else {
+    send({ type: 'RESULT', guess, hits, blows });
     G.myTurn = true;
     setState('game');
   }
@@ -307,9 +333,25 @@ function handleOpponentGuess(guess) {
 function handleResult(msg) {
   G.myGuesses.push({ guess: msg.guess, hits: msg.hits, blows: msg.blows });
   G.guessPending = false;
-  if (msg.hits === 4) {
+
+  if (msg.lastChance) {
+    // 自分の推測が正解だがゲストに最後の1手が与えられた（ホスト側）
+    G.hostWinPending = true;
+    G.myTurn = false;
+    setState('game');
+  } else if (msg.hits === 4) {
     send({ type: 'REVEAL', secret: G.mySecret });
-    showResult(true, msg.guess);
+    if (G.lastChanceTurn) {
+      // 最後の1手で自分も正解 → 引き分け
+      G.lastChanceTurn = false;
+      showResult('draw', msg.guess);
+    } else {
+      showResult(true, msg.guess);
+    }
+  } else if (G.lastChanceTurn) {
+    // 最後の1手で正解できず → 負け
+    G.lastChanceTurn = false;
+    showResult(false, null);
   } else {
     G.myTurn = false;
     setState('game');
@@ -345,6 +387,7 @@ function resetGame() {
     myReadySent: false, opponentReady: false,
     myGuesses: [], opponentGuesses: [],
     myTurn: false, guessPending: false, won: false, connectTimeout: null,
+    hostWinPending: false, lastChanceTurn: false,
   });
 
   setupNumpad.reset();

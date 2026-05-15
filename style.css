@@ -16,18 +16,13 @@
   --border: #2a2a4a;
   --radius: 12px;
   --radius-sm: 8px;
-  /* iPhone safe area */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
-html {
-  height: 100%;
-  /* iOS スクロールバウンス抑制 */
-  overscroll-behavior: none;
-}
+html { height: 100%; overscroll-behavior: none; }
 
 body {
   background: var(--bg);
@@ -42,7 +37,6 @@ body {
   padding-left: max(16px, var(--safe-left));
   padding-right: max(16px, var(--safe-right));
   padding-bottom: max(16px, var(--safe-bottom));
-  /* タップ時のテキスト選択を防ぐ */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -62,70 +56,39 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 40px 36px;
+  padding: 36px 32px;
   width: 100%;
 }
 
 .center-card {
-  max-width: 480px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
   text-align: center;
 }
 
 /* ─── Typography ─── */
-.title {
-  font-size: 2.4rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-}
+.title { font-size: 2.4rem; font-weight: 700; letter-spacing: 0.04em; line-height: 1.2; }
+.subtitle { color: var(--text-muted); font-size: 0.95rem; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.hint { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; }
+.status-text { color: var(--text-muted); font-size: 0.95rem; }
 
-.subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-}
-
-h2 {
-  font-size: 1.4rem;
-  font-weight: 700;
-}
-
-h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
-}
-
-.hint {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
-.status-text {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-}
-
-/* ─── Rules block ─── */
+/* ─── Rules ─── */
 .rules {
   background: var(--surface-alt);
   border-radius: var(--radius-sm);
-  padding: 14px 20px;
+  padding: 12px 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
-
 .rules p { display: flex; align-items: center; gap: 10px; }
 
 /* ─── Badges ─── */
@@ -133,12 +96,11 @@ h3 {
   display: inline-block;
   padding: 2px 10px;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   flex-shrink: 0;
 }
-
 .hit-badge  { background: var(--hit);  color: #1a1a2e; }
 .blow-badge { background: var(--blow); color: #1a1a2e; }
 
@@ -154,7 +116,6 @@ h3 {
   font-family: inherit;
   cursor: pointer;
   border: none;
-  /* ダブルタップズームを防ぎ、タップ遅延を除去 */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -163,61 +124,42 @@ h3 {
   min-height: 48px;
   white-space: nowrap;
 }
-
 .btn:hover:not(:disabled) { opacity: 0.88; }
 .btn:active:not(:disabled) { transform: scale(0.97); }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .btn-primary   { background: var(--accent); color: #fff; }
 .btn-secondary { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); }
-.btn-ghost     { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; font-size: 0.9rem; }
+.btn-ghost     { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 16px; font-size: 0.88rem; }
 
-.btn-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
+.btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 
-/* ─── Inputs ─── */
+/* ─── Text inputs (passphrase / join only) ─── */
 .text-input {
   background: var(--surface-alt);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: inherit;
-  /* 16px 未満だと iOS Safari が自動ズームするため 16px 以上に固定 */
   font-size: 16px;
   padding: 12px 16px;
   width: 100%;
   min-height: 48px;
   outline: none;
   transition: border-color 0.15s;
-  /* iOS の角丸・影リセット */
   -webkit-appearance: none;
   appearance: none;
 }
-
 .text-input:focus { border-color: var(--accent); }
 .text-input::placeholder { color: var(--text-muted); }
 
-.digit-input {
-  font-family: "Courier New", monospace;
-  font-size: 1.5rem;
-  letter-spacing: 0.3em;
-  text-align: center;
-}
-
 .input-group { width: 100%; display: flex; flex-direction: column; gap: 6px; }
 
-/* ─── Error text ─── */
-.error-text {
-  color: var(--accent);
-  font-size: 0.85rem;
-  text-align: left;
-}
+/* ─── Error / feedback ─── */
+.error-text    { color: var(--accent); font-size: 0.83rem; text-align: left; }
+.copy-feedback { color: var(--blow); font-size: 0.83rem; }
 
-/* ─── Passphrase display box ─── */
+/* ─── Room / passphrase display ─── */
 .room-id-box {
   display: flex;
   align-items: center;
@@ -228,41 +170,137 @@ h3 {
   padding: 14px 18px;
   width: 100%;
 }
-
 #passphrase-display {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 700;
   flex: 1;
   word-break: break-all;
-  letter-spacing: 0.05em;
-}
-
-.copy-feedback {
-  color: var(--blow);
-  font-size: 0.85rem;
+  letter-spacing: 0.04em;
 }
 
 /* ─── Spinner ─── */
 .spinner {
-  width: 36px;
-  height: 36px;
+  width: 34px; height: 34px;
   border: 3px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ─── Setup waiting overlay ─── */
+/* ─── Setup waiting ─── */
 #setup-waiting {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 4px;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+}
+
+/* ══════════════════════════════════════
+   NUMPAD
+   ══════════════════════════════════════ */
+.numpad {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* game panel numpad: no max-width constraint */
+.numpad-game { max-width: none; margin-bottom: 16px; }
+
+/* ─── Digit display ─── */
+.numpad-display {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.digit-slot {
+  width: 58px;
+  height: 58px;
+  background: var(--surface-alt);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Courier New", monospace;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+
+/* 入力済みの桁 */
+.digit-slot.filled {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* 次に入力される桁 (カーソル位置) */
+.digit-slot.active {
+  border-color: var(--blow);
+  box-shadow: 0 0 0 3px rgba(126, 200, 227, 0.2);
+}
+
+/* ─── Button grid ─── */
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.numpad-btn {
+  height: 54px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.08s, transform 0.08s, opacity 0.15s;
+}
+
+.numpad-btn:active:not(:disabled) {
+  transform: scale(0.91);
+  background: var(--bg);
+}
+
+/* 使用済み・無効の数字ボタン */
+.numpad-btn:disabled {
+  opacity: 0.22;
+  cursor: default;
+}
+
+.numpad-del {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.numpad-ok {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+}
+
+.numpad-ok:disabled {
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  opacity: 0.35;
 }
 
 /* ─── Game layout ─── */
@@ -289,10 +327,7 @@ h3 {
   z-index: 10;
 }
 
-.game-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
+.game-title { font-size: 1.1rem; font-weight: 700; }
 
 .turn-badge {
   padding: 6px 14px;
@@ -304,11 +339,7 @@ h3 {
   transition: background 0.3s, color 0.3s;
   white-space: nowrap;
 }
-
-.turn-badge.my-turn {
-  background: var(--accent);
-  color: #fff;
-}
+.turn-badge.my-turn { background: var(--accent); color: #fff; }
 
 .game-body {
   display: grid;
@@ -317,50 +348,21 @@ h3 {
 }
 
 .game-panel {
-  padding: 16px 20px 80px;
+  padding: 16px 20px 60px;
   border-right: 1px solid var(--border);
 }
-
 .game-panel:last-child { border-right: none; }
 
-/* 推測入力行: デスクトップは横並び */
-.guess-input-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.guess-input-row .text-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 1.2rem;
-  letter-spacing: 0.15em;
-}
-
-.guess-input-row .btn {
-  padding: 10px 14px;
-  font-size: 0.88rem;
-  flex-shrink: 0;
-}
-
 /* ─── Guess table ─── */
-.table-wrapper {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-top: 12px;
-}
+.table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 4px; }
 
-.guess-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
+.guess-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 
 .guess-table th {
   text-align: center;
-  padding: 8px 6px;
+  padding: 7px 5px;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   border-bottom: 1px solid var(--border);
   letter-spacing: 0.05em;
@@ -368,43 +370,51 @@ h3 {
 
 .guess-table td {
   text-align: center;
-  padding: 9px 6px;
+  padding: 8px 5px;
   border-bottom: 1px solid var(--border);
 }
-
 .guess-table tbody tr:last-child td { border-bottom: none; }
-
-.guess-table td:nth-child(2) {
-  font-family: "Courier New", monospace;
-  font-size: 1.05rem;
-  letter-spacing: 0.12em;
-}
+.guess-table td:nth-child(2) { font-family: "Courier New", monospace; font-size: 1rem; letter-spacing: 0.12em; }
 
 .hit-col  { color: var(--hit); }
 .blow-col { color: var(--blow); }
-
 .hit-val  { color: var(--hit);  font-weight: 700; }
 .blow-val { color: var(--blow); font-weight: 700; }
 .zero-val { color: var(--text-muted); }
 
-.empty-hint {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  text-align: center;
-  padding: 20px 0;
+.empty-hint { color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 16px 0; }
+
+/* ─── Result ─── */
+.result-icon { font-size: 3rem; line-height: 1; }
+
+.secrets-reveal {
+  display: flex;
+  gap: 16px;
+  width: 100%;
 }
 
-/* ─── Result screen ─── */
-.result-icon {
-  font-size: 3rem;
-  line-height: 1;
+.secret-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+}
+
+.secret-number {
+  font-family: "Courier New", monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
 }
 
 /* ════════════════════════════════════════
-   モバイル対応 (〜600px)
+   モバイル (〜600px)
    ════════════════════════════════════════ */
 @media (max-width: 600px) {
-
   body {
     padding: 12px;
     padding-left: max(12px, var(--safe-left));
@@ -413,34 +423,25 @@ h3 {
     align-items: flex-start;
   }
 
-  .screen {
-    align-items: flex-start;
-    padding-top: 24px;
-  }
+  .screen { align-items: flex-start; padding-top: 20px; }
 
-  /* カード */
-  .card { padding: 28px 20px; }
+  .card { padding: 24px 16px; }
   .title { font-size: 1.9rem; }
-  h2 { font-size: 1.2rem; }
+  h2 { font-size: 1.15rem; }
 
-  /* 入力フォント: iOS zoom 防止で 16px は維持、digit は 1.3rem */
-  .digit-input { font-size: 1.3rem; letter-spacing: 0.2em; }
-
-  /* 合言葉表示 */
-  #passphrase-display { font-size: 1.1rem; }
+  /* center-card のテンキーは幅いっぱいに */
+  .center-card .numpad { max-width: none; }
 
   /* ゲームヘッダー */
   .game-header {
     padding: 10px 14px;
     padding-top: max(10px, var(--safe-top));
-    gap: 8px;
   }
   .game-title { font-size: 1rem; }
-  .turn-badge { font-size: 0.78rem; padding: 5px 10px; }
+  .turn-badge { font-size: 0.76rem; padding: 5px 10px; }
 
   /* ゲームボディ: 縦積み */
   .game-body { grid-template-columns: 1fr; }
-
   .game-panel {
     border-right: none;
     border-bottom: 1px solid var(--border);
@@ -448,35 +449,24 @@ h3 {
   }
   .game-panel:last-child {
     border-bottom: none;
-    /* ホームバー分の余白 */
     padding-bottom: max(28px, var(--safe-bottom));
   }
 
-  /* 推測入力行: モバイルは縦積みに変更 */
-  .guess-input-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .guess-input-row .text-input {
-    width: 100%;
-    font-size: 1.3rem;
-    letter-spacing: 0.2em;
-    text-align: center;
-  }
-  .guess-input-row .btn {
-    width: 100%;
-    padding: 13px;
-    font-size: 0.95rem;
-  }
+  /* テンキーボタンを大きめに */
+  .numpad-btn { height: 58px; font-size: 1.4rem; }
+  .numpad-del, .numpad-ok { font-size: 1rem; }
 
-  /* テーブル文字調整 */
-  .guess-table { font-size: 0.88rem; }
-  .guess-table td:nth-child(2) { font-size: 0.95rem; letter-spacing: 0.08em; }
+  /* 数字スロット */
+  .digit-slot { width: 56px; height: 56px; font-size: 1.6rem; }
+
+  .secret-number { font-size: 1.3rem; }
 }
 
-/* 極小画面 (〜360px) */
+/* 極小 (〜360px) */
 @media (max-width: 360px) {
   .title { font-size: 1.6rem; }
-  .card { padding: 22px 16px; }
-  .game-header { padding: 8px 12px; }
+  .card { padding: 18px 12px; }
+  .digit-slot { width: 48px; height: 50px; font-size: 1.4rem; }
+  .numpad-btn { height: 52px; }
+  .numpad-grid { gap: 5px; }
 }

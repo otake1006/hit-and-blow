@@ -27,11 +27,11 @@
     </div>
   </section>
 
-  <!-- Create form (host enters passphrase) -->
+  <!-- Create form -->
   <section id="screen-create-form" class="screen hidden">
     <div class="card center-card">
       <h2>ルームを作る</h2>
-      <p class="hint">合言葉を決めてください（英数字・ひらがな等、1〜20文字）</p>
+      <p class="hint">合言葉を決めてください（1〜20文字）</p>
       <div class="input-group">
         <input id="input-passphrase-create" type="text" class="text-input" maxlength="20" placeholder="例: さくら123" autocomplete="off" spellcheck="false">
         <p id="create-error" class="error-text hidden">合言葉を入力してください</p>
@@ -43,7 +43,7 @@
     </div>
   </section>
 
-  <!-- Creating (PeerJS initializing) -->
+  <!-- Creating spinner -->
   <section id="screen-creating" class="screen hidden">
     <div class="card center-card">
       <div class="spinner"></div>
@@ -51,14 +51,14 @@
     </div>
   </section>
 
-  <!-- Waiting (host shows passphrase) -->
+  <!-- Waiting -->
   <section id="screen-waiting" class="screen hidden">
     <div class="card center-card">
       <h2>ルームを作成しました</h2>
       <p class="hint">この合言葉を相手に伝えてください</p>
       <div class="room-id-box">
         <span id="passphrase-display"></span>
-        <button id="btn-copy" class="btn btn-ghost" title="コピー">コピー</button>
+        <button id="btn-copy" class="btn btn-ghost">コピー</button>
       </div>
       <p id="copy-feedback" class="copy-feedback hidden">コピーしました！</p>
       <div class="spinner"></div>
@@ -66,7 +66,7 @@
     </div>
   </section>
 
-  <!-- Joining (guest enters passphrase) -->
+  <!-- Joining -->
   <section id="screen-joining" class="screen hidden">
     <div class="card center-card">
       <h2>ゲームに参加</h2>
@@ -82,7 +82,7 @@
     </div>
   </section>
 
-  <!-- Connecting -->
+  <!-- Connecting spinner -->
   <section id="screen-connecting" class="screen hidden">
     <div class="card center-card">
       <div class="spinner"></div>
@@ -90,16 +90,33 @@
     </div>
   </section>
 
-  <!-- Setup (choose secret number) -->
+  <!-- Setup: choose secret number -->
   <section id="screen-setup" class="screen hidden">
     <div class="card center-card">
       <h2>秘密の数字を決めてください</h2>
-      <p class="hint">0〜9の重複なし4桁の数字を入力してください</p>
-      <div class="input-group">
-        <input id="input-secret" type="text" class="text-input digit-input" maxlength="4" placeholder="例: 1234" autocomplete="off" inputmode="numeric">
-        <p id="setup-error" class="error-text hidden">4桁で重複なしの数字を入力してください</p>
+      <p class="hint">0〜9の重複なし4桁をボタンで選んでください</p>
+      <div class="numpad" id="numpad-setup">
+        <div class="numpad-display">
+          <span class="digit-slot" id="setup-slot-0">—</span>
+          <span class="digit-slot" id="setup-slot-1">—</span>
+          <span class="digit-slot" id="setup-slot-2">—</span>
+          <span class="digit-slot" id="setup-slot-3">—</span>
+        </div>
+        <div class="numpad-grid">
+          <button class="numpad-btn" data-digit="1">1</button>
+          <button class="numpad-btn" data-digit="2">2</button>
+          <button class="numpad-btn" data-digit="3">3</button>
+          <button class="numpad-btn" data-digit="4">4</button>
+          <button class="numpad-btn" data-digit="5">5</button>
+          <button class="numpad-btn" data-digit="6">6</button>
+          <button class="numpad-btn" data-digit="7">7</button>
+          <button class="numpad-btn" data-digit="8">8</button>
+          <button class="numpad-btn" data-digit="9">9</button>
+          <button class="numpad-btn numpad-del" data-action="del">⌫</button>
+          <button class="numpad-btn" data-digit="0">0</button>
+          <button class="numpad-btn numpad-ok" data-action="ok" disabled>決定</button>
+        </div>
       </div>
-      <button id="btn-set-secret" class="btn btn-primary">決定</button>
       <div id="setup-waiting" class="waiting-overlay hidden">
         <div class="spinner"></div>
         <p>相手の準備を待っています...</p>
@@ -118,16 +135,31 @@
       <!-- My guesses panel -->
       <div class="game-panel">
         <h3>自分の推測</h3>
-        <div class="guess-input-row">
-          <input id="input-guess" type="text" class="text-input digit-input" maxlength="4" placeholder="推測を入力" autocomplete="off" inputmode="numeric">
-          <button id="btn-guess" class="btn btn-primary" disabled>推測する</button>
+        <div class="numpad numpad-game" id="numpad-game">
+          <div class="numpad-display">
+            <span class="digit-slot" id="game-slot-0">—</span>
+            <span class="digit-slot" id="game-slot-1">—</span>
+            <span class="digit-slot" id="game-slot-2">—</span>
+            <span class="digit-slot" id="game-slot-3">—</span>
+          </div>
+          <div class="numpad-grid">
+            <button class="numpad-btn" data-digit="1">1</button>
+            <button class="numpad-btn" data-digit="2">2</button>
+            <button class="numpad-btn" data-digit="3">3</button>
+            <button class="numpad-btn" data-digit="4">4</button>
+            <button class="numpad-btn" data-digit="5">5</button>
+            <button class="numpad-btn" data-digit="6">6</button>
+            <button class="numpad-btn" data-digit="7">7</button>
+            <button class="numpad-btn" data-digit="8">8</button>
+            <button class="numpad-btn" data-digit="9">9</button>
+            <button class="numpad-btn numpad-del" data-action="del">⌫</button>
+            <button class="numpad-btn" data-digit="0">0</button>
+            <button class="numpad-btn numpad-ok" data-action="ok" disabled>推測</button>
+          </div>
         </div>
-        <p id="guess-error" class="error-text hidden">4桁で重複なしの数字を入力してください</p>
         <div class="table-wrapper">
-          <table id="my-guess-table" class="guess-table">
-            <thead>
-              <tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr>
-            </thead>
+          <table class="guess-table">
+            <thead><tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr></thead>
             <tbody id="my-guess-body"></tbody>
           </table>
           <p id="my-guess-empty" class="empty-hint">まだ推測がありません</p>
@@ -138,10 +170,8 @@
       <div class="game-panel">
         <h3>相手の推測</h3>
         <div class="table-wrapper">
-          <table id="opp-guess-table" class="guess-table">
-            <thead>
-              <tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr>
-            </thead>
+          <table class="guess-table">
+            <thead><tr><th>#</th><th>推測</th><th class="hit-col">Hit</th><th class="blow-col">Blow</th></tr></thead>
             <tbody id="opp-guess-body"></tbody>
           </table>
           <p id="opp-guess-empty" class="empty-hint">まだ推測がありません</p>
@@ -155,7 +185,16 @@
     <div class="card center-card">
       <div id="result-icon" class="result-icon"></div>
       <h2 id="result-title"></h2>
-      <p id="result-msg" class="hint"></p>
+      <div class="secrets-reveal">
+        <div class="secret-item">
+          <p class="hint">あなたの数字</p>
+          <p id="result-my-secret" class="secret-number">—</p>
+        </div>
+        <div class="secret-item">
+          <p class="hint">相手の数字</p>
+          <p id="result-opp-secret" class="secret-number">—</p>
+        </div>
+      </div>
       <button id="btn-replay" class="btn btn-primary">もう一度遊ぶ</button>
     </div>
   </section>

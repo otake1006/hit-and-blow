@@ -31,14 +31,74 @@ function calcHitBlow(secret, guess) {
   return { hits, blows };
 }
 
-// PeerJS ID = プレフィックス + 合言葉をエンコードしたもの
 function toPeerId(passphrase) {
-  // PeerJS IDに使える文字(英数字・-_)に変換
   return 'hitblow-' + encodeURIComponent(passphrase).replace(/%/g, '-');
 }
 
 function send(msg) {
   if (G.conn && G.conn.open) G.conn.send(msg);
+}
+
+// ─── Numpad factory ───────────────────────────────────────────────────────────
+function createNumpad(prefix, onSubmit) {
+  let value = '';
+  let enabled = true;
+
+  const slots    = [0, 1, 2, 3].map(i => document.getElementById(`${prefix}-slot-${i}`));
+  const digitBtns = document.querySelectorAll(`#numpad-${prefix} [data-digit]`);
+  const delBtn   = document.querySelector(`#numpad-${prefix} [data-action="del"]`);
+  const okBtn    = document.querySelector(`#numpad-${prefix} [data-action="ok"]`);
+
+  function refresh() {
+    slots.forEach((slot, i) => {
+      if (i < value.length) {
+        slot.textContent = value[i];
+        slot.classList.add('filled');
+        slot.classList.remove('active');
+      } else if (i === value.length && enabled) {
+        slot.textContent = '—';
+        slot.classList.remove('filled');
+        slot.classList.add('active');
+      } else {
+        slot.textContent = '—';
+        slot.classList.remove('filled', 'active');
+      }
+    });
+
+    digitBtns.forEach(btn => {
+      btn.disabled = !enabled || value.includes(btn.dataset.digit) || value.length >= 4;
+    });
+
+    if (delBtn) delBtn.disabled = !enabled || value.length === 0;
+    if (okBtn)  okBtn.disabled  = !enabled || value.length !== 4;
+  }
+
+  digitBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!enabled || value.length >= 4 || value.includes(btn.dataset.digit)) return;
+      value += btn.dataset.digit;
+      refresh();
+    });
+  });
+
+  if (delBtn) delBtn.addEventListener('click', () => {
+    if (!enabled || value.length === 0) return;
+    value = value.slice(0, -1);
+    refresh();
+  });
+
+  if (okBtn) okBtn.addEventListener('click', () => {
+    if (!enabled || value.length !== 4) return;
+    onSubmit(value);
+  });
+
+  refresh();
+
+  return {
+    reset()           { value = ''; refresh(); },
+    getValue()        { return value; },
+    setEnabled(v)     { enabled = v; refresh(); },
+  };
 }
 
 // ─── State machine ───────────────────────────────────────────────────────────
@@ -58,7 +118,6 @@ function renderUI() {
     const el = document.getElementById('screen-' + id);
     if (el) el.classList.toggle('hidden', G.state !== id);
   });
-
   if (G.state === 'game') renderGame();
 }
 
@@ -72,10 +131,9 @@ function renderGame() {
     badge.classList.remove('my-turn');
   }
 
-  const guessBtn = document.getElementById('btn-guess');
-  guessBtn.disabled = !G.myTurn || G.guessPending;
+  guessNumpad.setEnabled(G.myTurn && !G.guessPending);
 
-  renderGuessTable('my-guess-body', 'my-guess-empty', G.myGuesses);
+  renderGuessTable('my-guess-body',  'my-guess-empty',  G.myGuesses);
   renderGuessTable('opp-guess-body', 'opp-guess-empty', G.opponentGuesses);
 }
 
@@ -95,22 +153,24 @@ function renderGuessTable(bodyId, emptyId, list) {
     tr.innerHTML = `
       <td>${i + 1}</td>
       <td>${entry.guess}</td>
-      <td class="${entry.hits > 0 ? 'hit-val' : 'zero-val'}">${entry.hits}</td>
+      <td class="${entry.hits  > 0 ? 'hit-val'  : 'zero-val'}">${entry.hits}</td>
       <td class="${entry.blows > 0 ? 'blow-val' : 'zero-val'}">${entry.blows}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-function showResult(won) {
+function showResult(won, opponentSecret) {
   G.won = won;
-  const lastMyGuess = G.myGuesses[G.myGuesses.length - 1];
-  document.getElementById('result-icon').textContent = won ? '🏆' : '😢';
+  document.getElementById('result-icon').textContent  = won ? '🏆' : '😢';
   document.getElementById('result-title').textContent = won ? 'あなたの勝ち！' : 'あなたの負け...';
-  document.getElementById('result-msg').textContent = won
-    ? `相手の数字 [${lastMyGuess ? lastMyGuess.guess : '????'}] を当てました！`
-    : `相手があなたの数字 [${G.mySecret}] を当てました`;
+  document.getElementById('result-my-secret').textContent  = G.mySecret || '—';
+  document.getElementById('result-opp-secret').textContent = opponentSecret || '...';
   setState('result');
+}
+
+function revealOpponentSecret(secret) {
+  document.getElementById('result-opp-secret').textContent = secret;
 }
 
 // ─── PeerJS Host ──────────────────────────────────────────────────────────────
@@ -119,15 +179,14 @@ function createRoom(passphrase) {
   setState('creating');
   G.role = 'host';
 
-  const peerId = toPeerId(passphrase);
-  G.peer = new Peer(peerId, { debug: 0 });
+  G.peer = new Peer(toPeerId(passphrase), { debug: 0 });
 
   G.peer.on('open', () => {
     document.getElementById('passphrase-display').textContent = passphrase;
     setState('waiting');
   });
 
-  G.peer.on('connection', (conn) => {
+  G.peer.on('connection', conn => {
     G.conn = conn;
     setupConnectionHandlers();
     setState('setup');
@@ -158,37 +217,25 @@ function setupConnectionHandlers() {
     if (G.role === 'guest') setState('setup');
   });
 
-  G.conn.on('data', (msg) => {
+  G.conn.on('data', msg => {
     switch (msg.type) {
       case 'READY':  handleOpponentReady();          break;
       case 'GUESS':  handleOpponentGuess(msg.guess); break;
       case 'RESULT': handleResult(msg);              break;
+      case 'REVEAL': revealOpponentSecret(msg.secret); break;
     }
   });
 
-  G.conn.on('close', () => {
-    if (G.state !== 'result') setState('disconnected');
-  });
-  G.conn.on('error', () => {
-    if (G.state !== 'result') setState('disconnected');
-  });
+  G.conn.on('close', () => { if (G.state !== 'result') setState('disconnected'); });
+  G.conn.on('error', () => { if (G.state !== 'result') setState('disconnected'); });
 }
 
 // ─── Setup phase ─────────────────────────────────────────────────────────────
-function submitSecret() {
-  const val = document.getElementById('input-secret').value.trim();
-  const errEl = document.getElementById('setup-error');
-
-  if (!isValidNumber(val)) {
-    errEl.classList.remove('hidden');
-    return;
-  }
-  errEl.classList.add('hidden');
+function submitSecret(val) {
   G.mySecret = val;
   G.myReadySent = true;
 
-  document.getElementById('btn-set-secret').disabled = true;
-  document.getElementById('input-secret').disabled = true;
+  setupNumpad.setEnabled(false);
   document.getElementById('setup-waiting').classList.remove('hidden');
 
   send({ type: 'READY' });
@@ -208,34 +255,26 @@ function tryStartGame() {
 }
 
 // ─── Game phase ───────────────────────────────────────────────────────────────
-function submitGuess() {
+function submitGuess(val) {
   if (!G.myTurn || G.guessPending) return;
-  const val = document.getElementById('input-guess').value.trim();
-  const errEl = document.getElementById('guess-error');
-
-  if (!isValidNumber(val)) {
-    errEl.classList.remove('hidden');
-    return;
-  }
-  errEl.classList.add('hidden');
 
   G.guessPending = true;
   G.myTurn = false;
-  renderGame();
+  guessNumpad.setEnabled(false);
+  guessNumpad.reset();
 
   send({ type: 'GUESS', guess: val });
-  document.getElementById('input-guess').value = '';
+  renderGame();
 }
 
 function handleOpponentGuess(guess) {
   const { hits, blows } = calcHitBlow(G.mySecret, guess);
   G.opponentGuesses.push({ guess, hits, blows });
-
   send({ type: 'RESULT', guess, hits, blows });
 
-  // hits===4 なら相手が当てた → 自分の負け
   if (hits === 4) {
-    showResult(false);
+    // 相手が当てた → 自分の負け。勝者(相手)に自分の秘密を開示
+    showResult(false, null);
   } else {
     G.myTurn = true;
     setState('game');
@@ -246,9 +285,10 @@ function handleResult(msg) {
   G.myGuesses.push({ guess: msg.guess, hits: msg.hits, blows: msg.blows });
   G.guessPending = false;
 
-  // hits===4 なら自分が当てた → 自分の勝ち
   if (msg.hits === 4) {
-    showResult(true);
+    // 自分が当てた → 勝ち。相手に自分の秘密を開示
+    send({ type: 'REVEAL', secret: G.mySecret });
+    showResult(true, msg.guess); // msg.guess が相手の秘密数字
   } else {
     G.myTurn = false;
     setState('game');
@@ -259,9 +299,9 @@ function handleResult(msg) {
 function handlePeerError(err) {
   if (G.role === 'host' && (err.type === 'unavailable-id' || err.type === 'peer-unavailable')) {
     const errEl = document.getElementById('create-error');
-    errEl.textContent = 'この合言葉は既に使われています。別の合言葉を試してください。';
+    errEl.textContent = 'この合言葉は既に使われています。別の合言葉をお試しください。';
     errEl.classList.remove('hidden');
-    if (G.peer) { try { G.peer.destroy(); } catch(_) {} G.peer = null; }
+    if (G.peer) { try { G.peer.destroy(); } catch (_) {} G.peer = null; }
     setState('create-form');
     return;
   }
@@ -273,7 +313,7 @@ function handlePeerError(err) {
     const errEl = document.getElementById('join-error');
     errEl.textContent = msg;
     errEl.classList.remove('hidden');
-    if (G.peer) { try { G.peer.destroy(); } catch(_) {} G.peer = null; }
+    if (G.peer) { try { G.peer.destroy(); } catch (_) {} G.peer = null; }
     setState('joining');
     return;
   }
@@ -283,41 +323,51 @@ function handlePeerError(err) {
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
 function resetGame() {
-  if (G.conn) { try { G.conn.close(); } catch(_) {} }
-  if (G.peer) { try { G.peer.destroy(); } catch(_) {} }
+  if (G.conn) { try { G.conn.close();   } catch (_) {} }
+  if (G.peer) { try { G.peer.destroy(); } catch (_) {} }
+
   Object.assign(G, {
     state: 'landing', peer: null, conn: null, role: null,
     passphrase: null, mySecret: null,
     myReadySent: false, opponentReady: false,
     myGuesses: [], opponentGuesses: [], myTurn: false, guessPending: false, won: false,
   });
+
+  setupNumpad.reset();
+  setupNumpad.setEnabled(true);
+  guessNumpad.reset();
+  guessNumpad.setEnabled(false);
+
+  document.getElementById('setup-waiting').classList.add('hidden');
   document.getElementById('input-passphrase-create').value = '';
   document.getElementById('create-error').classList.add('hidden');
-  document.getElementById('input-secret').value = '';
-  document.getElementById('input-secret').disabled = false;
-  document.getElementById('btn-set-secret').disabled = false;
-  document.getElementById('setup-waiting').classList.add('hidden');
-  document.getElementById('input-guess').value = '';
   document.getElementById('input-room-id').value = '';
   document.getElementById('join-error').classList.add('hidden');
-  document.getElementById('join-error').textContent = '合言葉を入力してください';
+
   setState('landing');
 }
 
-// ─── Event listeners ──────────────────────────────────────────────────────────
+// ─── Init ─────────────────────────────────────────────────────────────────────
+let setupNumpad, guessNumpad;
+
 window.addEventListener('load', () => {
   if (typeof Peer === 'undefined') {
     alert('PeerJSの読み込みに失敗しました。ページを再読み込みしてください。');
     return;
   }
 
+  // Numpad初期化
+  setupNumpad = createNumpad('setup', submitSecret);
+  guessNumpad = createNumpad('game',  submitGuess);
+  guessNumpad.setEnabled(false); // ゲーム開始まで無効
+
   // Landing
   document.getElementById('btn-create').addEventListener('click', () => setState('create-form'));
-  document.getElementById('btn-join').addEventListener('click', () => setState('joining'));
+  document.getElementById('btn-join').addEventListener('click',   () => setState('joining'));
 
   // Create form
   document.getElementById('btn-start-create').addEventListener('click', () => {
-    const val = document.getElementById('input-passphrase-create').value.trim();
+    const val   = document.getElementById('input-passphrase-create').value.trim();
     const errEl = document.getElementById('create-error');
     if (!val) {
       errEl.textContent = '合言葉を入力してください';
@@ -327,20 +377,33 @@ window.addEventListener('load', () => {
     errEl.classList.add('hidden');
     createRoom(val);
   });
-
-  document.getElementById('input-passphrase-create').addEventListener('keydown', (e) => {
+  document.getElementById('input-passphrase-create').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-start-create').click();
   });
-
-  document.getElementById('input-passphrase-create').addEventListener('input', () => {
-    document.getElementById('create-error').classList.add('hidden');
-  });
-
   document.getElementById('btn-back-from-create').addEventListener('click', () => setState('landing'));
+
+  // Waiting — copy passphrase
+  document.getElementById('btn-copy').addEventListener('click', () => {
+    const text     = document.getElementById('passphrase-display').textContent;
+    const feedback = document.getElementById('copy-feedback');
+    const show = () => {
+      feedback.classList.remove('hidden');
+      setTimeout(() => feedback.classList.add('hidden'), 2000);
+    };
+    navigator.clipboard.writeText(text).then(show).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      show();
+    });
+  });
 
   // Joining
   document.getElementById('btn-connect').addEventListener('click', () => {
-    const val = document.getElementById('input-room-id').value.trim();
+    const val   = document.getElementById('input-room-id').value.trim();
     const errEl = document.getElementById('join-error');
     if (!val) {
       errEl.textContent = '合言葉を入力してください';
@@ -350,49 +413,10 @@ window.addEventListener('load', () => {
     errEl.classList.add('hidden');
     joinRoom(val);
   });
-
-  document.getElementById('input-room-id').addEventListener('keydown', (e) => {
+  document.getElementById('input-room-id').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-connect').click();
   });
-
   document.getElementById('btn-back-from-join').addEventListener('click', () => setState('landing'));
-
-  // Waiting — copy passphrase
-  document.getElementById('btn-copy').addEventListener('click', () => {
-    const text = document.getElementById('passphrase-display').textContent;
-    const feedback = document.getElementById('copy-feedback');
-    navigator.clipboard.writeText(text).then(() => {
-      feedback.classList.remove('hidden');
-      setTimeout(() => feedback.classList.add('hidden'), 2000);
-    }).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      feedback.classList.remove('hidden');
-      setTimeout(() => feedback.classList.add('hidden'), 2000);
-    });
-  });
-
-  // Setup
-  document.getElementById('btn-set-secret').addEventListener('click', submitSecret);
-  document.getElementById('input-secret').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') submitSecret();
-  });
-  document.getElementById('input-secret').addEventListener('input', () => {
-    document.getElementById('setup-error').classList.add('hidden');
-  });
-
-  // Game
-  document.getElementById('btn-guess').addEventListener('click', submitGuess);
-  document.getElementById('input-guess').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') submitGuess();
-  });
-  document.getElementById('input-guess').addEventListener('input', () => {
-    document.getElementById('guess-error').classList.add('hidden');
-  });
 
   // Result / Disconnected
   document.getElementById('btn-replay').addEventListener('click', resetGame);

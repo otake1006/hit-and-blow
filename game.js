@@ -92,11 +92,23 @@ function createNumpad(prefix, onSubmit) {
     onSubmit(value);
   });
 
+  function handleKey(key) {
+    if (!enabled) return;
+    if (/^[0-9]$/.test(key)) {
+      if (value.length < 4 && !value.includes(key)) { value += key; refresh(); }
+    } else if (key === 'Backspace') {
+      if (value.length > 0) { value = value.slice(0, -1); refresh(); }
+    } else if (key === 'Enter') {
+      if (value.length === 4) onSubmit(value);
+    }
+  }
+
   refresh();
   return {
     reset()       { value = ''; refresh(); },
     getValue()    { return value; },
     setEnabled(v) { enabled = v; refresh(); },
+    handleKey,
   };
 }
 
@@ -358,6 +370,14 @@ window.addEventListener('load', () => {
   setupNumpad = createNumpad('setup', submitSecret);
   guessNumpad = createNumpad('game',  submitGuess);
   guessNumpad.setEnabled(false);
+
+  // キーボード入力をアクティブなテンキーへルーティング
+  document.addEventListener('keydown', e => {
+    // テキスト入力中は無視
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (G.state === 'setup') setupNumpad.handleKey(e.key);
+    if (G.state === 'game')  guessNumpad.handleKey(e.key);
+  });
 
   // Landing
   document.getElementById('btn-create').addEventListener('click', () => setState('create-form'));

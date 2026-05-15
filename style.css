@@ -452,7 +452,7 @@ h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transfo
   /* ゲームボディ: 上部に2列テーブル、下部にテンキー */
   .game-body {
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: 1fr auto;
     grid-template-areas:
       "left  right"
       "input input";

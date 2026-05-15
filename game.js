@@ -92,13 +92,16 @@ function createNumpad(prefix, onSubmit) {
     onSubmit(value);
   });
 
-  function handleKey(key) {
+  function handleKey(key, code) {
     if (!enabled) return;
-    if (/^[0-9]$/.test(key)) {
-      if (value.length < 4 && !value.includes(key)) { value += key; refresh(); }
-    } else if (key === 'Backspace') {
+    // e.key で '0'–'9'（数字行・テンキー共通）、fallback で e.code の Numpad0–9
+    const digit = /^[0-9]$/.test(key) ? key
+                : /^Numpad([0-9])$/.exec(code)?.[1] ?? null;
+    if (digit !== null) {
+      if (value.length < 4 && !value.includes(digit)) { value += digit; refresh(); }
+    } else if (key === 'Backspace' || code === 'NumpadDecimal') {
       if (value.length > 0) { value = value.slice(0, -1); refresh(); }
-    } else if (key === 'Enter') {
+    } else if (key === 'Enter' || code === 'NumpadEnter') {
       if (value.length === 4) onSubmit(value);
     }
   }
@@ -375,8 +378,8 @@ window.addEventListener('load', () => {
   document.addEventListener('keydown', e => {
     // テキスト入力中は無視
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (G.state === 'setup') setupNumpad.handleKey(e.key);
-    if (G.state === 'game')  guessNumpad.handleKey(e.key);
+    if (G.state === 'setup') setupNumpad.handleKey(e.key, e.code);
+    if (G.state === 'game')  guessNumpad.handleKey(e.key, e.code);
   });
 
   // Landing
